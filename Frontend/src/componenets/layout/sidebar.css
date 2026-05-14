@@ -1,0 +1,311 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.sidebar {
+  width: 280px;
+  height: 100vh;
+  background: linear-gradient(180deg, #0d0d2b 0%, #111132 100%);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px 20px;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed {
+  width: 80px;
+  padding: 10px 12px 15px;
+  overflow: visible;
+}
+
+/* ── Brand ─────────────────────────────────────────── */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 8px 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-brand {
+  justify-content: center;
+  /* padding: 0 0 16px; */
+  gap: 0;
+}
+
+.brand-logo {
+  /* width: 52px; */
+  height: 66px;
+  /* border-radius: 50%; */
+  overflow: hidden;
+  /* background: rgba(255, 255, 255, 0.08); */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.logo-fallback {
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+}
+
+.brand-sub {
+  font-size: 12px;
+  color: #a5b4fc;
+  font-weight: 400;
+}
+
+/* ── Nav ────────────────────────────────────────────── */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  /* Space for the scrollbar */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+}
+
+.sidebar.collapsed .sidebar-nav {
+  overflow: visible;
+}
+
+/* Hide Scrollbar for Nav */
+.sidebar-nav::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #c7d2fe;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  text-align: left;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+/* Custom Tooltip (Pin) for Collapsed State */
+.sidebar.collapsed [data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 12px;
+  background: #4f46e5;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.sidebar.collapsed [data-tooltip]::before {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 4px;
+  border: 5px solid transparent;
+  border-right-color: #4f46e5;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.sidebar.collapsed [data-tooltip]:hover::after,
+.sidebar.collapsed [data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  margin-left: 15px;
+}
+
+.sidebar.collapsed [data-tooltip]:hover::before {
+  margin-left: 7px;
+}
+
+.nav-item:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: #ffffff;
+}
+
+.nav-item--active {
+  background: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+}
+
+.nav-item--active:hover {
+  background: linear-gradient(90deg, #4338ca 0%, #4f46e5 100%);
+}
+
+.nav-icon {
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  transition: font-size 0.3s ease;
+}
+
+.sidebar.collapsed .nav-icon {
+  width: 100%;
+  font-size: 18px;
+}
+
+.nav-arrow {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.nav-item--active .nav-arrow {
+  opacity: 1;
+}
+
+/* ── Department Card ────────────────────────────────── */
+.sidebar-dept-card {
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 14px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-dept-card {
+  padding: 12px 4px;
+  border-radius: 10px;
+}
+
+.dept-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapsed .dept-card-header {
+  margin-bottom: 0;
+  justify-content: center;
+}
+
+.dept-shield {
+  width: 40px;
+  height: 40px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dept-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e0e7ff;
+  line-height: 1.5;
+  padding-top: 2px;
+}
+
+.dept-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dept-login-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dept-logged-label {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.dept-user {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ── Responsive Sidebar ──────────────────────────────── */
+.sidebar.mobile {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  z-index: 200;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+}
+
+.sidebar.mobile.mobile-open {
+  transform: translateX(0);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+}
