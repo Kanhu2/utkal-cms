@@ -1,0 +1,37 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('department_workshop_seminar', function (Blueprint $table) {
+            $table->collation = 'utf8mb4_unicode_ci';
+            $table->charset = 'utf8mb4';
+
+            $table->integer('id', true);
+            $table->integer('department_id');
+            $table->text('name');
+            $table->integer('participants');
+            $table->string('photo');
+            $table->string('broucher')->nullable();
+            $table->string('updated_by', 100);
+            $table->string('start_date', 100);
+            $table->string('end_date', 100);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('department_workshop_seminar');
+    }
+};
