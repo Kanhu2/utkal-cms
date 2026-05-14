@@ -37,7 +37,7 @@ function Login() {
 
     try {
       await loginApi({
-        department_id: Number(departmentId),
+        // department_id: Number(departmentId),
         email,
         password,
       });
