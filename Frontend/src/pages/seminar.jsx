@@ -13,12 +13,13 @@ import {
   faCalendarAlt,
   faTimes,
   faFileImage,
-  faFilePdf
+  faFilePdf,
+  faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
 import { useAuthStore } from '../store/authStore';
 import './seminar.css';
-import { getWorkshopSeminars, createWorkshopSeminar } from '../../utils/api';
+import { getWorkshopSeminars, createWorkshopSeminar, deleteWorkshopSeminar, updateWorkshopSeminar } from '../../utils/api';
 
 const parseDate = (dateStr) => {
   if (!dateStr) return null;
@@ -51,6 +52,8 @@ const mapWorkshopSeminar = (item) => {
     name: item.name || item.title,
     description: item.description,
     participants: item.participants || '0',
+    rawStartDate: startDate,
+    rawEndDate: endDate,
     startDate: formatDate(startDate),
     endDate: formatDate(endDate),
     photo: item.photo,
@@ -59,6 +62,8 @@ const mapWorkshopSeminar = (item) => {
     broucherUrl: item.broucher_url,
     createDate: item.created_at || item.create_date,
     userName: item.user_name,
+    updated_by: item.user_name || 'N/A',
+    approvalStatus: Number(item.preview) === 0 ? 'Appr. Pending' : 'Published',
   };
 };
 
@@ -94,6 +99,14 @@ const Seminar = () => {
       }
     }
     return value;
+  };
+
+  const formatDateForInput = (value) => {
+    if (!value || !value.includes('-')) return '';
+    const parts = value.split('-');
+    if (parts[0].length === 4) return value;
+    const [day, month, year] = parts;
+    return `${year}-${month}-${day}`;
   };
 
   useEffect(() => {
@@ -135,8 +148,13 @@ const Seminar = () => {
     }
 
     try {
-      const saved = await createWorkshopSeminar(payload);
-      setItems(prev => [mapWorkshopSeminar(saved), ...prev]);
+      const saved = editingItem
+        ? await updateWorkshopSeminar(editingItem.id, payload)
+        : await createWorkshopSeminar(payload);
+      const mapped = mapWorkshopSeminar(saved);
+      setItems(prev => editingItem
+        ? prev.map(item => (item.id === mapped.id ? mapped : item))
+        : [mapped, ...prev]);
       setFormData({
         name: '',
         participants: '',
@@ -149,7 +167,7 @@ const Seminar = () => {
       await Swal.fire({
         icon: 'success',
         title: 'Success',
-        text: 'Workshop/Seminar saved successfully.',
+        text: editingItem ? 'Workshop/Seminar updated successfully.' : 'Workshop/Seminar saved successfully.',
         confirmButtonText: 'OK',
       });
     } catch (err) {
@@ -167,11 +185,25 @@ const Seminar = () => {
     }
   };
 
-  const handleDelete = (id) => {
-    setItems(items.filter(item => item.id !== id));
-    if (editingItem && editingItem.id === id) {
-      setEditingItem(null);
+  const handleDelete = async (id) => {
+    setError('');
+
+    try {
+      await deleteWorkshopSeminar(id);
+      setItems((current) => current.filter(item => item.id !== id));
+      if (editingItem && editingItem.id === id) {
+        setEditingItem(null);
+      }
+    } catch (err) {
+      const message = err.data?.message || err.message || 'Unable to delete workshop/seminar.';
+      setError(message);
     }
+  };
+
+  const handlePublish = (id) => {
+    setItems((current) => current.map((item) => (
+      item.id === id ? { ...item, approvalStatus: 'Published' } : item
+    )));
   };
 
   const handleEditClick = (item) => {
@@ -179,9 +211,12 @@ const Seminar = () => {
     setFormData({
       name: item.name || '',
       participants: item.participants || '',
-      start_date: '',
-      end_date: '',
+      start_date: formatDateForInput(item.rawStartDate),
+      end_date: formatDateForInput(item.rawEndDate),
     });
+    setSelectedPhoto(null);
+    setSelectedBrochure(null);
+    setError('');
   };
 
   const handleAddNewClick = () => {
@@ -252,24 +287,19 @@ const Seminar = () => {
                 <th>Number of Participants</th>
                 <th>Start Date</th>
                 <th>End Date</th>
-                {user?.role !== 'admin' && (
-                  <th>Actions</th>
-                )}
-
-                {user?.role === 'admin' && (
-                  <th>Updated by</th>
-                )}
+                <th>Actions</th>
+                <th>Updated by</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '24px' }}>Loading workshop/seminar details...</td>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '24px' }}>Loading workshop/seminar details...</td>
                 </tr>
               )}
               {!isLoading && items.length === 0 && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '24px' }}>No workshop/seminar details found.</td>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '24px' }}>No workshop/seminar details found.</td>
                 </tr>
               )}
               {!isLoading && items.map((item, index) => (
@@ -280,25 +310,27 @@ const Seminar = () => {
                   <td className="text-muted">{item.participants}</td>
                   <td className="text-muted">{item.startDate}</td>
                   <td className="text-muted">{item.endDate}</td>
-                  {user?.role !== 'admin' && (
-                    <td>
-                      <div className="action-buttons">
-                        <button className="action-btn" type="button" onClick={() => setViewingItem(item)}>
-                          <FontAwesomeIcon icon={faEye} />
-                        </button>
+                  <td>
+                    <div className="action-buttons">
+                      <button className="action-btn" type="button" onClick={() => setViewingItem(item)}>
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+                      {user?.role !== 'admin' && (
                         <button className="action-btn" type="button" onClick={() => handleEditClick(item)}>
                           <FontAwesomeIcon icon={faEdit} />
                         </button>
-                        <button className="action-btn delete-btn" type="button" onClick={() => handleDelete(item.id)}>
-                          <FontAwesomeIcon icon={faTrash} />
+                      )}
+                      <button className="action-btn delete-btn" type="button" onClick={() => handleDelete(item.id)}>
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                      {user?.role === 'admin' && item.approvalStatus !== 'Published' && (
+                        <button className="action-btn" type="button" onClick={() => handlePublish(item.id)}>
+                          <FontAwesomeIcon icon={faCheck} />
                         </button>
-                      </div>
-                    </td>
-                  )}
-
-                  {user?.role === 'admin' && (
-                    <td>{item.updated_by ?? 'N/A'}</td>
-                  )}
+                      )}
+                    </div>
+                  </td>
+                  <td>{item.updated_by ?? 'N/A'}</td>
                 </tr>
               ))}
             </tbody>

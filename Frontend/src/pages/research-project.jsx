@@ -12,12 +12,13 @@ import {
   faUpload,
   faCalendarAlt,
   faTimes,
-  faFilePdf
+  faFilePdf,
+  faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
 import { useAuthStore } from '../store/authStore';
 import './research-project.css';
-import { getResearchProjects, createResearchProject } from '../../utils/api';
+import { getResearchProjects, createResearchProject, deleteResearchProject, updateResearchProject } from '../../utils/api';
 
 const parseDate = (dateStr) => {
   if (!dateStr) return null;
@@ -53,6 +54,14 @@ const formatAmount = (amount) => {
   return num.toLocaleString('en-IN');
 };
 
+const formatDateForInput = (value) => {
+  if (!value || !value.includes('-')) return '';
+  const parts = value.split('-');
+  if (parts[0].length === 4) return value;
+  const [day, month, year] = parts;
+  return `${year}-${month}-${day}`;
+};
+
 const mapResearchProject = (proj) => {
   const startFormatted = formatMonthYear(proj.start_date);
   const endFormatted = formatMonthYear(proj.end_date);
@@ -74,6 +83,8 @@ const mapResearchProject = (proj) => {
     endDate: proj.end_date,
     createDate: proj.create_date,
     userName: proj.user_name,
+    updated_by: proj.user_name || 'N/A',
+    approvalStatus: Number(proj.preview) === 0 ? 'Appr. Pending' : 'Published',
   };
 };
 
@@ -136,8 +147,13 @@ const ResearchProject = () => {
     }
 
     try {
-      const saved = await createResearchProject(payload);
-      setProjects(prev => [mapResearchProject(saved), ...prev]);
+      const saved = editingProject
+        ? await updateResearchProject(editingProject.id, payload)
+        : await createResearchProject(payload);
+      const mapped = mapResearchProject(saved);
+      setProjects(prev => editingProject
+        ? prev.map(project => (project.id === mapped.id ? mapped : project))
+        : [mapped, ...prev]);
       setFormData({
         title: '',
         funding_agency: '',
@@ -151,7 +167,7 @@ const ResearchProject = () => {
       await Swal.fire({
         icon: 'success',
         title: 'Success',
-        text: 'Research project saved successfully.',
+        text: editingProject ? 'Research project updated successfully.' : 'Research project saved successfully.',
         confirmButtonText: 'OK',
       });
     } catch (err) {
@@ -169,11 +185,25 @@ const ResearchProject = () => {
     }
   };
 
-  const handleDelete = (id) => {
-    setProjects(projects.filter(p => p.id !== id));
-    if (editingProject && editingProject.id === id) {
-      setEditingProject(null);
+  const handleDelete = async (id) => {
+    setError('');
+
+    try {
+      await deleteResearchProject(id);
+      setProjects((current) => current.filter(p => p.id !== id));
+      if (editingProject && editingProject.id === id) {
+        setEditingProject(null);
+      }
+    } catch (err) {
+      const message = err.data?.message || err.message || 'Unable to delete research project.';
+      setError(message);
     }
+  };
+
+  const handlePublish = (id) => {
+    setProjects((current) => current.map((project) => (
+      project.id === id ? { ...project, approvalStatus: 'Published' } : project
+    )));
   };
 
   const handleEditClick = (proj) => {
@@ -182,10 +212,12 @@ const ResearchProject = () => {
       title: proj.title || '',
       funding_agency: proj.agency || '',
       amount: proj.amount?.replace(/,/g, '') || '',
-      start_date: '',
-      end_date: '',
+      start_date: formatDateForInput(proj.startDate),
+      end_date: formatDateForInput(proj.endDate),
       coordinator_name: proj.pi || '',
     });
+    setSelectedFile(null);
+    setError('');
   };
 
   const handleAddNewClick = () => {
@@ -257,24 +289,19 @@ const ResearchProject = () => {
                 <th>Amount (₹)</th>
                 <th>Period</th>
                 <th>PI / Coordinator</th>
-                {user?.role !== 'admin' && (
-                  <th>Actions</th>
-                )}
-
-                {user?.role === 'admin' && (
-                  <th>Updated by</th>
-                )}
+                <th>Actions</th>
+                <th>Updated by</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '24px' }}>Loading research projects...</td>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '24px' }}>Loading research projects...</td>
                 </tr>
               )}
               {!isLoading && projects.length === 0 && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '24px' }}>No research projects found.</td>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '24px' }}>No research projects found.</td>
                 </tr>
               )}
               {!isLoading && projects.map((proj, index) => (
@@ -295,25 +322,27 @@ const ResearchProject = () => {
                       <span className="text-light-muted">{proj.role}</span>
                     </div>
                   </td>
-                  {user?.role !== 'admin' && (
-                    <td>
-                      <div className="action-buttons">
-                        <button className="action-btn" type="button" onClick={() => setViewingProject(proj)}>
-                          <FontAwesomeIcon icon={faEye} />
-                        </button>
+                  <td>
+                    <div className="action-buttons">
+                      <button className="action-btn" type="button" onClick={() => setViewingProject(proj)}>
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+                      {user?.role !== 'admin' && (
                         <button className="action-btn" type="button" onClick={() => handleEditClick(proj)}>
                           <FontAwesomeIcon icon={faEdit} />
                         </button>
-                        <button className="action-btn delete-btn" type="button" onClick={() => handleDelete(proj.id)}>
-                          <FontAwesomeIcon icon={faTrash} />
+                      )}
+                      <button className="action-btn delete-btn" type="button" onClick={() => handleDelete(proj.id)}>
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                      {user?.role === 'admin' && proj.approvalStatus !== 'Published' && (
+                        <button className="action-btn" type="button" onClick={() => handlePublish(proj.id)}>
+                          <FontAwesomeIcon icon={faCheck} />
                         </button>
-                      </div>
-                    </td>
-                  )}
-
-                  {user?.role === 'admin' && (
-                    <td>{proj.updated_by ?? 'N/A'}</td>
-                  )}
+                      )}
+                    </div>
+                  </td>
+                  <td>{proj.updated_by ?? 'N/A'}</td>
                 </tr>
               ))}
             </tbody>

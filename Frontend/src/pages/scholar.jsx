@@ -10,7 +10,8 @@ import {
   faChevronRight,
   faUpload,
   faTimes,
-  faFilePdf
+  faFilePdf,
+  faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuthStore } from '../store/authStore';
 import './scholar.css';
@@ -41,6 +42,12 @@ const Scholar = () => {
     if (editingItem && editingItem.id === id) {
       setEditingItem(null);
     }
+  };
+
+  const handlePublish = (id) => {
+    setItems((current) => current.map((item) => (
+      item.id === id ? { ...item, status: 'Published' } : item
+    )));
   };
 
   const handleEditClick = (item) => {
@@ -93,13 +100,8 @@ const Scholar = () => {
                 <th>Mentor Name</th>
                 <th>Document</th>
                 <th>Date Added</th>
-                {user?.role !== 'admin' && (
-                  <th>Actions</th>
-                )}
-
-                {user?.role === 'admin' && (
-                  <th>Updated by</th>
-                )}
+                <th>Actions</th>
+                <th>Updated by</th>
               </tr>
             </thead>
             <tbody>
@@ -126,25 +128,27 @@ const Scholar = () => {
                     </div>
                   </td>
                   <td className="text-muted">{item.date}</td>
-                  {user?.role !== 'admin' && (
-                    <td>
-                      <div className="action-buttons">
-                        <button className="action-btn" type="button" onClick={() => setViewingItem(item)}>
-                          <FontAwesomeIcon icon={faEye} />
-                        </button>
+                  <td>
+                    <div className="action-buttons">
+                      <button className="action-btn" type="button" onClick={() => setViewingItem(item)}>
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+                      {user?.role !== 'admin' && (
                         <button className="action-btn" type="button" onClick={() => handleEditClick(item)}>
                           <FontAwesomeIcon icon={faEdit} />
                         </button>
-                        <button className="action-btn delete-btn" type="button" onClick={() => handleDelete(item.id)}>
-                          <FontAwesomeIcon icon={faTrash} />
+                      )}
+                      <button className="action-btn delete-btn" type="button" onClick={() => handleDelete(item.id)}>
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                      {user?.role === 'admin' && item.status !== 'Published' && (
+                        <button className="action-btn" type="button" onClick={() => handlePublish(item.id)}>
+                          <FontAwesomeIcon icon={faCheck} />
                         </button>
-                      </div>
-                    </td>
-                  )}
-
-                  {user?.role === 'admin' && (
-                    <td>{item.updated_by ?? 'N/A'}</td>
-                  )}
+                      )}
+                    </div>
+                  </td>
+                  <td>{item.updated_by ?? 'N/A'}</td>
                 </tr>
               ))}
             </tbody>

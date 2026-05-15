@@ -89,23 +89,53 @@ export const deleteDepartment = (id) => api.delete(`/departments/${id}`);
 
 export const getNotices = () => api.get("/notices");
 export const createNotice = (data) => api.post("/add-notice", data);
-export const updateNotice = (id, data) => api.put(`/notices/${id}`, data);
-export const deleteNotice = (id) => api.delete(`/notices/${id}`);
+export const updateNotice = (id, data) => api.post(`/edit-notice/${id}`, data);
+export const deleteNotice = (id) => api.delete(`/delete-notice/${id}`);
 
 export const getTenders = () => api.get("/tenders");
 export const createTender = (data) => api.post("/add-tender", data);
+export const updateTender = (id, data) => api.post(`/edit-tender/${id}`, data);
+export const deleteTender = (id) => api.delete(`/delete-tender/${id}`);
 
 export const getNewsEvents = () => api.get("/news-events");
 export const createNewsEvent = (data) => api.post("/add-news-events", data);
+export const updateNewsEvent = (id, data) => api.post(`/edit-news-events/${id}`, data);
+export const deleteNewsEvent = (id) => api.delete(`/delete-news-events/${id}`);
 
 export const getIlms = () => api.get("/ilms");
 export const createIlms = (data) => api.post("/add-ilms", data);
+export const updateIlms = (id, data) => api.post(`/edit-ilms/${id}`, data);
+export const deleteIlms = (id) => api.delete(`/delete-ilms/${id}`);
 
 export const getResearchProjects = () => api.get("/research-projects");
 export const createResearchProject = (data) => api.post("/add-research-project", data);
+export const updateResearchProject = (id, data) => api.post(`/edit-research-project/${id}`, data);
+export const deleteResearchProject = (id) => api.delete(`/delete-research-project/${id}`);
 
 export const getWorkshopSeminars = () => api.get("/workshop-seminars");
 export const createWorkshopSeminar = (data) => api.post("/add-workshop-seminar", data);
+export const updateWorkshopSeminar = (id, data) => api.post(`/edit-workshop-seminar/${id}`, data);
+export const deleteWorkshopSeminar = (id) => api.delete(`/delete-workshop-seminar/${id}`);
+
+export const getPublications = () => api.get("/publications");
+export const createPublication = (data) => api.post("/add-publication", data);
+export const updatePublication = (id, data) => api.post(`/edit-publication/${id}`, data);
+export const deletePublication = (id) => api.delete(`/delete-publication/${id}`);
+
+export const getAchievements = () => api.get("/achievements");
+export const createAchievement = (data) => api.post("/add-achievement", data);
+export const updateAchievement = (id, data) => api.post(`/edit-achievement/${id}`, data);
+export const deleteAchievement = (id) => api.delete(`/delete-achievement/${id}`);
+
+export const getResearchScholars = () => api.get("/research-scholars");
+export const createResearchScholar = (data) => api.post("/add-research-scholar", data);
+export const updateResearchScholar = (id, data) => api.post(`/edit-research-scholar/${id}`, data);
+export const deleteResearchScholar = (id) => api.delete(`/delete-research-scholar/${id}`);
+
+export const getResearchSupervisors = () => api.get("/research-supervisors");
+export const createResearchSupervisor = (data) => api.post("/add-research-supervisor", data);
+export const updateResearchSupervisor = (id, data) => api.post(`/edit-research-supervisor/${id}`, data);
+export const deleteResearchSupervisor = (id) => api.delete(`/delete-research-supervisor/${id}`);
 
 export const getUsers = () => api.get("/users");
 export const createUser = (data) => api.post("/register", data);

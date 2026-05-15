@@ -17,10 +17,11 @@ import {
   faFileArchive,
   faLink,
   faCircle,
-  faTimes
+  faTimes,
+  faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
-import { createIlms, getIlms } from '../../utils/api';
+import { createIlms, deleteIlms, getIlms, updateIlms } from '../../utils/api';
 import { useAuthStore } from '../store/authStore';
 import './ilms.css';
 
@@ -71,6 +72,7 @@ const ILMS = () => {
       date: item.create_date,
       preview: item.preview,
       approvalStatus: Number(item.preview) === 0 ? 'Appr. Pending' : 'Published',
+      updated_by: item.updated_by || 'N/A',
     };
   };
 
@@ -94,15 +96,38 @@ const ILMS = () => {
     loadIlms();
   }, []);
 
-  const handleDelete = (id) => {
-    setItems(items.filter(item => item.id !== id));
-    if (editingItem && editingItem.id === id) {
-      setEditingItem(null);
+  const handleDelete = async (id) => {
+    setError('');
+
+    try {
+      await deleteIlms(id);
+      setItems((current) => current.filter(item => item.id !== id));
+      if (editingItem && editingItem.id === id) {
+        setEditingItem(null);
+      }
+    } catch (err) {
+      const message = err.data?.message || err.message || 'Unable to delete ILMS.';
+      setError(message);
     }
+  };
+
+  const handlePublish = (id) => {
+    setItems((current) => current.map((item) => (
+      item.id === id ? { ...item, approvalStatus: 'Published', preview: 1 } : item
+    )));
   };
 
   const handleEditClick = (item) => {
     setEditingItem(item);
+    setSelectedFile(null);
+    setFormData({
+      title: item.title || '',
+      description: item.description || '',
+    });
+    setError('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleAddNewClick = () => {
@@ -141,14 +166,19 @@ const ILMS = () => {
     setIsSaving(true);
 
     try {
-      const saved = await createIlms(payload);
-      setItems((current) => [mapIlmsItem(saved), ...current]);
+      const saved = editingItem
+        ? await updateIlms(editingItem.id, payload)
+        : await createIlms(payload);
+      const mapped = mapIlmsItem(saved);
+      setItems((current) => editingItem
+        ? current.map((item) => (item.id === mapped.id ? mapped : item))
+        : [mapped, ...current]);
       handleAddNewClick();
 
       await Swal.fire({
         icon: 'success',
         title: 'Success',
-        text: 'ILMS saved successfully.',
+        text: editingItem ? 'ILMS updated successfully.' : 'ILMS saved successfully.',
         confirmButtonText: 'OK',
       });
     } catch (err) {
@@ -259,24 +289,19 @@ const ILMS = () => {
                 <th style={{ width: '45%' }}>Title</th>
                 <th>Uploaded On</th>
                 <th>Status</th>
-                {user?.role !== 'admin' && (
-                  <th>Actions</th>
-                )}
-
-                {user?.role === 'admin' && (
-                  <th>Updated by</th>
-                )}
+                <th>Actions</th>
+                <th>Updated by</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '24px' }}>Loading ILMS resources...</td>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '24px' }}>Loading ILMS resources...</td>
                 </tr>
               )}
               {!isLoading && filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '24px' }}>No ILMS resources found.</td>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '24px' }}>No ILMS resources found.</td>
                 </tr>
               )}
               {!isLoading && filteredItems.map((item, index) => {
@@ -302,26 +327,29 @@ const ILMS = () => {
                         {item.approvalStatus}
                       </div>
                     </td>
-                    {user?.role !== 'admin' && (
-                      <td>
-                        <div className="action-buttons">
-                          <button className="action-btn" type="button" onClick={() => setViewingItem(item)}>
-                            <FontAwesomeIcon icon={faEye} />
-                          </button>
+                    <td>
+                      <div className="action-buttons">
+                        <button className="action-btn" type="button" onClick={() => setViewingItem(item)}>
+                          <FontAwesomeIcon icon={faEye} />
+                        </button>
+                        {user?.role !== 'admin' && (
                           <button className="action-btn" type="button" onClick={() => handleEditClick(item)}>
                             <FontAwesomeIcon icon={faEdit} />
                           </button>
-                          <button className="action-btn delete-btn" type="button" onClick={() => handleDelete(item.id)}>
-                            <FontAwesomeIcon icon={faTrash} />
+                        )}
+                        <button className="action-btn delete-btn" type="button" onClick={() => handleDelete(item.id)}>
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                        {user?.role === 'admin' && item.approvalStatus !== 'Published' && (
+                          <button className="action-btn" type="button" onClick={() => handlePublish(item.id)}>
+                            <FontAwesomeIcon icon={faCheck} />
                           </button>
-                        </div>
-                      </td>
-                    )}
-                    {user?.role === 'admin' && (
-                      <td>
-                        {item.updated_by ?? 'N/A'}
-                      </td>
-                    )}
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      {item.updated_by ?? 'N/A'}
+                    </td>
                   </tr>
                 );
               })}

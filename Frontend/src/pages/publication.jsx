@@ -8,7 +8,8 @@ import {
   faTrash,
   faFilter,
   faChevronLeft,
-  faChevronRight
+  faChevronRight,
+  faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import { Editor } from '@tinymce/tinymce-react';
 import { useAuthStore } from '../store/authStore';
@@ -28,7 +29,8 @@ const Publication = () => {
         <h4>Journal Publications</h4>
         <p>An Efficient Algorithm for Data Classification</p>
       `,
-      date: 'May 20, 2025'
+      date: 'May 20, 2025',
+      status: 'Appr. Pending'
     },
     {
       id: 2,
@@ -36,7 +38,8 @@ const Publication = () => {
         <h4>Conference Publications</h4>
         <p>Deep Learning Approaches for Big Data Analytics</p>
       `,
-      date: 'May 15, 2025'
+      date: 'May 15, 2025',
+      status: 'Appr. Pending'
     }
   ];
 
@@ -49,6 +52,12 @@ const Publication = () => {
       setEditingPub(null);
       setFormData({ content: '' });
     }
+  };
+
+  const handlePublish = (id) => {
+    setPublications((current) => current.map((pub) => (
+      pub.id === id ? { ...pub, status: 'Published' } : pub
+    )));
   };
 
   const handleEditClick = (pub) => {
@@ -155,35 +164,42 @@ const Publication = () => {
                   <td className="col-date">
                     {pub.date}
                   </td>
-                  {user?.role !== 'admin' && (
-                    <td className="col-actions">
-                      <div className="action-buttons">
+                  <td className="col-actions">
+                    <div className="action-buttons">
 
                         {/* <button className="action-btn">
                         <FontAwesomeIcon icon={faEye} />
                       </button> */}
 
+                      {user?.role !== 'admin' && (
                         <button
                           className="action-btn"
                           onClick={() => handleEditClick(pub)}
                         >
                           <FontAwesomeIcon icon={faEdit} />
                         </button>
+                      )}
 
+                      <button
+                        className="action-btn delete-btn"
+                        onClick={() => handleDelete(pub.id)}
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+
+                      {user?.role === 'admin' && pub.status !== 'Published' && (
                         <button
-                          className="action-btn delete-btn"
-                          onClick={() => handleDelete(pub.id)}
+                          className="action-btn"
+                          onClick={() => handlePublish(pub.id)}
                         >
-                          <FontAwesomeIcon icon={faTrash} />
+                          <FontAwesomeIcon icon={faCheck} />
                         </button>
+                      )}
 
-                      </div>
-                    </td>
-                  )}
+                    </div>
+                  </td>
 
-                  {user?.role === 'admin' && (
-                    <td>{pub.updated_by ?? 'N/A'}</td>
-                  )}
+                  <td>{pub.updated_by ?? 'N/A'}</td>
 
                 </tr>
               ))}

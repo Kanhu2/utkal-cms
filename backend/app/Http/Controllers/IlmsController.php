@@ -52,6 +52,57 @@ class IlmsController extends Controller
         return response()->json($this->formatIlms($ilms), 201);
     }
 
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $ilms = DepartmentIlms::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $data = $request->validate([
+            'title' => ['required', 'string'],
+            'description' => ['required', 'string'],
+            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,mp4', 'max:102400'],
+        ]);
+
+        $oldFilePath = $ilms->file;
+        $filePath = $ilms->file;
+        if ($request->hasFile('file')) {
+            $filePath = $request->file('file')->store('ilms', 'public');
+        }
+
+        $ilms->update([
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'file' => $filePath,
+            'updated_by' => $request->user()->name,
+            'updated_at' => Carbon::now()->format('d-m-Y'),
+        ]);
+
+        if ($oldFilePath && $oldFilePath !== $filePath) {
+            $this->deletePublicFile($oldFilePath);
+        }
+
+        return response()->json($this->formatIlms($ilms));
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $ilms = DepartmentIlms::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $this->deletePublicFile($ilms->file);
+        $ilms->delete();
+
+        return response()->json(['message' => 'ILMS deleted successfully.']);
+    }
+
     private function formatIlms(DepartmentIlms $ilms): array
     {
         return [

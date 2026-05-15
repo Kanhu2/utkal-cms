@@ -151,8 +151,28 @@ const Dashboard = () => {
         {[
           { value: '38', label: 'Events', sub: 'This Month', color: 'purple', icon: faCalendarDays, trend: '+12%', up: true },
           { value: '24', label: 'News Updates', sub: 'This Month', color: 'green', icon: faNewspaper, trend: '+5%', up: true },
-          { value: '07', label: 'Tenders', sub: 'Active', color: 'amber', icon: faBriefcase, trend: '0%', up: null },
-          { value: '12', label: 'Notices', sub: 'Active', color: 'blue', icon: faBullhorn, trend: '+8%', up: true },
+          ...(user?.role === 'admin'
+            ? [
+              {
+                value: '07',
+                label: 'Tenders',
+                sub: 'Active',
+                color: 'amber',
+                icon: faBriefcase,
+                trend: '0%',
+                up: null,
+              },
+              {
+                value: '12',
+                label: 'Notices',
+                sub: 'Active',
+                color: 'blue',
+                icon: faBullhorn,
+                trend: '+8%',
+                up: true,
+              },
+            ]
+            : []),
           { value: '45', label: 'Faculty', sub: 'Total', color: 'rose', icon: faUsers, trend: '+2', up: true },
         ].map((card, i) => (
           <div className={`summary-card card-accent-${card.color}`} key={i}>

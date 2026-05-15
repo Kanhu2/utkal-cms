@@ -54,6 +54,59 @@ class ResearchSupervisorsController extends Controller
         return response()->json($this->formatResearchSupervisor($researchSupervisor), 201);
     }
 
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $researchSupervisor = DepartmentResearchSupervisors::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $data = $request->validate([
+            'name' => ['required', 'string'],
+            'email' => ['required', 'email', 'unique:department_research_supervisor,email,' . $researchSupervisor->id],
+            'intake' => ['required', 'integer'],
+            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
+        ]);
+
+        $oldFilePath = $researchSupervisor->file;
+        $filePath = $researchSupervisor->file;
+        if ($request->hasFile('file')) {
+            $filePath = $request->file('file')->store('research_supervisors/files', 'public');
+        }
+
+        $researchSupervisor->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'intake' => $data['intake'],
+            'file' => $filePath,
+            'updated_by' => $request->user()->name,
+            'updated_at' => Carbon::now()->format('d-m-Y'),
+        ]);
+
+        if ($oldFilePath && $oldFilePath !== $filePath) {
+            $this->deletePublicFile($oldFilePath);
+        }
+
+        return response()->json($this->formatResearchSupervisor($researchSupervisor));
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $researchSupervisor = DepartmentResearchSupervisors::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $this->deletePublicFile($researchSupervisor->file);
+        $researchSupervisor->delete();
+
+        return response()->json(['message' => 'Research supervisor deleted successfully.']);
+    }
+
     private function formatResearchSupervisor(DepartmentResearchSupervisors $researchSupervisor): array
     {
         return [

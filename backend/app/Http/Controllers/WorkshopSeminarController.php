@@ -61,6 +61,74 @@ class WorkshopSeminarController extends Controller
         return response()->json($this->formatWorkshopSeminar($workshopSeminar), 201);
     }
 
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $workshopSeminar = DepartmentWorkshopSeminar::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $data = $request->validate([
+            'name' => ['required', 'string'],
+            'participants' => ['required', 'integer'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,svg', 'max:2048'],
+            'broucher' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
+            'start_date' => ['required', 'date_format:d-m-Y'],
+            'end_date' => ['required', 'date_format:d-m-Y', 'after_or_equal:start_date'],
+        ]);
+
+        $oldPhotoPath = $workshopSeminar->photo;
+        $oldBroucherPath = $workshopSeminar->broucher;
+        $photoPath = $workshopSeminar->photo;
+        $broucherPath = $workshopSeminar->broucher;
+
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('workshop-seminars/photos', 'public');
+        }
+
+        if ($request->hasFile('broucher')) {
+            $broucherPath = $request->file('broucher')->store('workshop-seminars/brouchers', 'public');
+        }
+
+        $workshopSeminar->update([
+            'name' => $data['name'],
+            'participants' => $data['participants'],
+            'photo' => $photoPath,
+            'broucher' => $broucherPath,
+            'updated_by' => $request->user()->name,
+            'start_date' => $data['start_date'],
+            'end_date' => $data['end_date'],
+        ]);
+
+        if ($oldPhotoPath && $oldPhotoPath !== $photoPath) {
+            $this->deletePublicFile($oldPhotoPath);
+        }
+
+        if ($oldBroucherPath && $oldBroucherPath !== $broucherPath) {
+            $this->deletePublicFile($oldBroucherPath);
+        }
+
+        return response()->json($this->formatWorkshopSeminar($workshopSeminar));
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $workshopSeminar = DepartmentWorkshopSeminar::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $this->deletePublicFile($workshopSeminar->photo);
+        $this->deletePublicFile($workshopSeminar->broucher);
+        $workshopSeminar->delete();
+
+        return response()->json(['message' => 'Workshop/Seminar deleted successfully.']);
+    }
+
     private function formatWorkshopSeminar(DepartmentWorkshopSeminar $workshopSeminar): array
     {
         return [

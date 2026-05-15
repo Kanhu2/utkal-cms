@@ -54,6 +54,59 @@ class ResearchScholarsController extends Controller
         return response()->json($this->formatResearchScholar($researchScholar), 201);
     }
 
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $researchScholar = DepartmentResearchScholars::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $data = $request->validate([
+            'name' => ['required', 'string'],
+            'email' => ['required', 'email', 'unique:department_research_scholar,email,' . $researchScholar->id],
+            'mentor_name' => ['required', 'string'],
+            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
+        ]);
+
+        $oldFilePath = $researchScholar->file;
+        $filePath = $researchScholar->file;
+        if ($request->hasFile('file')) {
+            $filePath = $request->file('file')->store('research_scholars/files', 'public');
+        }
+
+        $researchScholar->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'mentor_name' => $data['mentor_name'],
+            'file' => $filePath,
+            'updated_by' => $request->user()->name,
+            'updated_at' => Carbon::now()->format('d-m-Y'),
+        ]);
+
+        if ($oldFilePath && $oldFilePath !== $filePath) {
+            $this->deletePublicFile($oldFilePath);
+        }
+
+        return response()->json($this->formatResearchScholar($researchScholar));
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $researchScholar = DepartmentResearchScholars::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $this->deletePublicFile($researchScholar->file);
+        $researchScholar->delete();
+
+        return response()->json(['message' => 'Research scholar deleted successfully.']);
+    }
+
     private function formatResearchScholar(DepartmentResearchScholars $researchScholar): array
     {
         return [

@@ -10,10 +10,11 @@ import {
   faCalendarAlt,
   faChevronLeft,
   faChevronRight,
-  faTrash
+  faTrash,
+  faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
-import { createNotice, getNotices } from '../../utils/api';
+import { createNotice, deleteNotice, getNotices, updateNotice } from '../../utils/api';
 import { useAuthStore } from '../store/authStore';
 import './notice.css';
 
@@ -107,13 +108,28 @@ const Notice = () => {
     setActiveMenuId(null);
   };
 
-  const handleDelete = (id) => {
-    setNotices((current) => current.filter((notice) => notice.id !== id));
-    setActiveMenuId(null);
+  const handleDelete = async (id) => {
+    setError('');
 
-    if (editingNotice?.id === id) {
-      handleAddNewClick();
+    try {
+      await deleteNotice(id);
+      setNotices((current) => current.filter((notice) => notice.id !== id));
+      setActiveMenuId(null);
+
+      if (editingNotice?.id === id) {
+        handleAddNewClick();
+      }
+    } catch (err) {
+      const message = err.data?.message || err.message || 'Unable to delete notice.';
+      setError(message);
     }
+  };
+
+  const handlePublish = (id) => {
+    setNotices((current) => current.map((notice) => (
+      notice.id === id ? { ...notice, status: 'Published' } : notice
+    )));
+    setActiveMenuId(null);
   };
 
   const handleInputChange = (e) => {
@@ -147,14 +163,19 @@ const Notice = () => {
     setIsSaving(true);
 
     try {
-      const savedNotice = await createNotice(payload);
-      setNotices((current) => [mapNotice(savedNotice), ...current]);
+      const savedNotice = editingNotice
+        ? await updateNotice(editingNotice.id, payload)
+        : await createNotice(payload);
+      const mappedNotice = mapNotice(savedNotice);
+      setNotices((current) => editingNotice
+        ? current.map((notice) => (notice.id === mappedNotice.id ? mappedNotice : notice))
+        : [mappedNotice, ...current]);
       handleAddNewClick();
 
       await Swal.fire({
         icon: 'success',
         title: 'Success',
-        text: 'Notice published successfully.',
+        text: editingNotice ? 'Notice updated successfully.' : 'Notice published successfully.',
         confirmButtonText: 'OK',
       });
     } catch (err) {
@@ -311,6 +332,11 @@ const Notice = () => {
                             <button className="dropdown-item delete-item" type="button" onClick={() => handleDelete(notice.id)}>
                               <FontAwesomeIcon icon={faTrash} /> Delete
                             </button>
+                            {user?.role === 'admin' && notice.status !== 'Published' && (
+                              <button className="dropdown-item" type="button" onClick={() => handlePublish(notice.id)}>
+                                <FontAwesomeIcon icon={faCheck} /> Publish
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>

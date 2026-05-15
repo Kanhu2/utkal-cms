@@ -10,10 +10,11 @@ import {
   faCalendarAlt,
   faChevronLeft,
   faChevronRight,
-  faFilter
+  faFilter,
+  faCheck
 } from '@fortawesome/free-solid-svg-icons';
 import Swal from 'sweetalert2';
-import { createTender, getTenders } from '../../utils/api';
+import { createTender, deleteTender, getTenders, updateTender } from '../../utils/api';
 import { useAuthStore } from '../store/authStore';
 import './tender.css';
 
@@ -33,6 +34,15 @@ const parseApiDate = (value) => {
 
   const [day, month, year] = value.split('-').map(Number);
   return new Date(year, month - 1, day);
+};
+
+const formatApiDateToInput = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const [day, month, year] = value.split('-');
+  return `${year}-${month}-${day}`;
 };
 
 const getTenderStatus = (startDate, endDate) => {
@@ -118,17 +128,31 @@ const Tender = () => {
     setFormData({
       title: tender.title,
       link: tender.attachmentType === 'link' ? tender.attachmentName : '',
-      startDate: tender.startDate,
-      endDate: tender.endDate
+      startDate: formatApiDateToInput(tender.startDate),
+      endDate: formatApiDateToInput(tender.endDate)
     });
   };
 
-  const handleDelete = (id) => {
-    setTenders((current) => current.filter((tender) => tender.id !== id));
+  const handleDelete = async (id) => {
+    setError('');
 
-    if (editingTender?.id === id) {
-      handleAddNewClick();
+    try {
+      await deleteTender(id);
+      setTenders((current) => current.filter((tender) => tender.id !== id));
+
+      if (editingTender?.id === id) {
+        handleAddNewClick();
+      }
+    } catch (err) {
+      const message = err.data?.message || err.message || 'Unable to delete tender.';
+      setError(message);
     }
+  };
+
+  const handlePublish = (id) => {
+    setTenders((current) => current.map((tender) => (
+      tender.id === id ? { ...tender, preview: 'Published' } : tender
+    )));
   };
 
   const handleInputChange = (e) => {
@@ -161,14 +185,19 @@ const Tender = () => {
     setIsSaving(true);
 
     try {
-      const savedTender = await createTender(payload);
-      setTenders((current) => [mapTender(savedTender), ...current]);
+      const savedTender = editingTender
+        ? await updateTender(editingTender.id, payload)
+        : await createTender(payload);
+      const mappedTender = mapTender(savedTender);
+      setTenders((current) => editingTender
+        ? current.map((tender) => (tender.id === mappedTender.id ? mappedTender : tender))
+        : [mappedTender, ...current]);
       handleAddNewClick();
 
       await Swal.fire({
         icon: 'success',
         title: 'Success',
-        text: 'Tender saved successfully.',
+        text: editingTender ? 'Tender updated successfully.' : 'Tender saved successfully.',
         confirmButtonText: 'OK',
       });
     } catch (err) {
@@ -328,6 +357,11 @@ const Tender = () => {
                       <button className="action-btn delete-btn" type="button" onClick={() => handleDelete(tender.id)}>
                         <FontAwesomeIcon icon={faTrash} />
                       </button>
+                      {user?.role === 'admin' && tender.preview !== 'Published' && (
+                        <button className="action-btn" type="button" onClick={() => handlePublish(tender.id)}>
+                          <FontAwesomeIcon icon={faCheck} />
+                        </button>
+                      )}
                     </div>
                   </td>
                   {/* )} */}

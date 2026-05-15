@@ -47,6 +47,42 @@ class PublicationController extends Controller
         return response()->json($this->formatPublication($publication), 201);
     }
 
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $publication = DepartmentPublication::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $data = $request->validate([
+            'content' => ['required', 'string'],
+        ]);
+
+        $publication->update([
+            'publication_details' => Purifier::clean($data['content']),
+            'updated_by' => $request->user()->name,
+            'updated_at' => Carbon::now()->format('d-m-Y'),
+        ]);
+
+        return response()->json($this->formatPublication($publication));
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $publication = DepartmentPublication::query()
+            ->when(
+                $request->user()->department_id,
+                fn($query, $departmentId) => $query->where('department_id', $departmentId)
+            )
+            ->findOrFail($id);
+
+        $publication->delete();
+
+        return response()->json(['message' => 'Publication deleted successfully.']);
+    }
+
     private function formatPublication(DepartmentPublication $publication): array
     {
         return [
