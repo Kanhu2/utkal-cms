@@ -456,32 +456,23 @@ HTML);
 
     private function requestBody(array $resource, array $required, bool $isCreate): array
     {
-        $jsonSchema = [
-            'type' => 'object',
-            'required' => array_values(array_intersect($required, array_keys($resource['jsonProperties']))),
-            'properties' => $resource['jsonProperties'],
-        ];
-
-        $content = [
-            'application/json' => [
-                'schema' => $jsonSchema,
-            ],
-        ];
-
-        if (!empty($resource['fileProperties'])) {
-            $content['multipart/form-data'] = [
-                'schema' => [
-                    'type' => 'object',
-                    'required' => $required,
-                    'properties' => array_merge($resource['jsonProperties'], $resource['fileProperties']),
-                ],
-            ];
-        }
-
         return [
             'required' => true,
-            'description' => $isCreate ? 'Create payload.' : 'Update payload. File fields are optional on edit unless noted.',
-            'content' => $content,
+            'description' => $isCreate
+                ? 'Create payload.'
+                : 'Update payload. File fields are optional on edit unless noted.',
+            'content' => [
+                'multipart/form-data' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'required' => $required,
+                        'properties' => array_merge(
+                            $resource['jsonProperties'],
+                            $resource['fileProperties']
+                        ),
+                    ],
+                ],
+            ],
         ];
     }
 
@@ -706,8 +697,10 @@ HTML);
         return [
             'required' => true,
             'content' => [
-                'application/json' => [
-                    'schema' => ['$ref' => '#/components/schemas/' . $schema],
+                'multipart/form-data' => [
+                    'schema' => [
+                        '$ref' => '#/components/schemas/' . $schema,
+                    ],
                 ],
             ],
         ];
