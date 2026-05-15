@@ -37,7 +37,7 @@ const request = async (method, endpoint, data, options = {}) => {
     : await response.text();
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && endpoint !== "/login") {
       handleTokenExpiration();
       return;
     }
