@@ -64,12 +64,7 @@ class TenderController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $tender = DepartmentTender::query()
-            ->when(
-                $request->user()->department_id,
-                fn($query, $departmentId) => $query->where('department_id', $departmentId)
-            )
-            ->findOrFail($id);
+        $tender = DepartmentTender::findOrFail($id);
 
         $data = $request->validate([
             'title' => ['required', 'string'],
@@ -126,12 +121,7 @@ class TenderController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $tender = DepartmentTender::query()
-            ->when(
-                $request->user()->department_id,
-                fn($query, $departmentId) => $query->where('department_id', $departmentId)
-            )
-            ->findOrFail($id);
+        $tender = DepartmentTender::findOrFail($id);
 
         $this->deletePublicFile($tender->file);
         $tender->delete();

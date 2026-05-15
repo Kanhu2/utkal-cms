@@ -66,12 +66,7 @@ class NoticeController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $notice = DepartmentNotice::query()
-            ->when(
-                $request->user()->department_id,
-                fn($query, $departmentId) => $query->where('department_id', $departmentId)
-            )
-            ->findOrFail($id);
+        $notice = DepartmentNotice::findOrFail($id);
 
         $data = $request->validate([
             'title' => ['required', 'string'],
@@ -130,12 +125,7 @@ class NoticeController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $notice = DepartmentNotice::query()
-            ->when(
-                $request->user()->department_id,
-                fn($query, $departmentId) => $query->where('department_id', $departmentId)
-            )
-            ->findOrFail($id);
+        $notice = DepartmentNotice::findOrFail($id);
 
         $this->deletePublicFile($notice->file);
         $notice->delete();
